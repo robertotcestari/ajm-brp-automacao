@@ -26,8 +26,14 @@ do escritório com esse caminho acessível. As colunas e o vocabulário de statu
   vezes não bagunça a planilha.
 - **Não inventar.** Campo sem informação recebe `verificar autos` ou fica vazio, nunca um
   palpite. Ver o porquê em `assets/schema-planilha.md`.
+- **Prazo de defesa calculado (provisório).** A única exceção ao "não inventar" é o prazo:
+  quando há `data_recebimento` e o prazo não foi informado, o script calcula
+  `recebimento + 13 dias úteis` (sáb/dom pulados, feriados ignorados — propositalmente
+  conservador) e grava essa data com `Fonte do prazo = Provisório`. Não é um palpite disfarçado
+  de certo: fica explicitamente marcado como provisório, para a triagem confirmar nos autos.
+  A regra mora em `lib/datas.py` (a mesma usada pela agenda).
 - **Preservar o que a equipe já preencheu.** Se um advogado já pôs o prazo ou o responsável à
-  mão, não sobrescreva com `verificar autos`.
+  mão, não sobrescreva — só o placeholder `verificar autos` é promovido à data calculada.
 
 ## Como executar
 

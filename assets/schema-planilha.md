@@ -32,8 +32,8 @@ acrescenta o que a automação precisa, sem quebrar o que a equipe já usa.
 | Coluna | Descrição | Observação |
 |--------|-----------|------------|
 | `Audiência` | Data/hora da audiência | Preencher se o e-mail informar; senão `verificar autos`. Use `não` quando confirmado que não há |
-| `Prazo de defesa` | Data-limite da contestação | Quase nunca vem no e-mail → `verificar autos` |
-| `Fonte do prazo` | De onde veio a informação | `E-mail` · `Autos` · `Provisório` |
+| `Prazo de defesa` | Data-limite da contestação | Calculado quando há recebimento: `recebimento + 13 dias úteis` (sáb/dom pulados, feriados ignorados → conservador). Sem recebimento → `verificar autos` |
+| `Fonte do prazo` | De onde veio a informação | `E-mail` · `Autos` · `Provisório` (= calculado pela automação) |
 
 ### Automação — controle do projeto
 
@@ -52,4 +52,8 @@ acrescenta o que a automação precisa, sem quebrar o que a equipe já usa.
   envio original é a que vale para contagem de prazo.
 - Campo que a automação não consegue preencher recebe **`verificar autos`**, nunca um valor
   inventado. É melhor um campo honestamente vazio do que um prazo errado.
+- **Exceção do prazo de defesa:** havendo `Data de recebimento`, a automação calcula um prazo
+  **provisório** (`recebimento + 13 dias úteis`, sáb/dom pulados, feriados ignorados) e marca
+  `Fonte do prazo = Provisório`. Não é palpite escondido — está rotulado como provisório, e a
+  triagem ainda deve confirmar a data real nos autos. Regra única em `lib/datas.py`.
 - Não duplicar linha: antes de inserir, conferir se o `Nº do Processo` já existe na planilha.

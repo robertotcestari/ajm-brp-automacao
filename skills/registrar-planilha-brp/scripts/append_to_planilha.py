@@ -23,6 +23,13 @@ try:
 except ImportError:
     sys.exit("openpyxl não instalado. Rode: pip install openpyxl --break-system-packages")
 
+# Cálculo de prazo compartilhado (lib/ na raiz do plugin)
+sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "lib"))
+import datas  # noqa: E402
+
+# Texto-placeholder que significa "ainda não sabemos" — pode ser substituído por um cálculo.
+PLACEHOLDER_PRAZO = "verificar autos"
+
 # Ordem canônica das colunas (ver assets/schema-planilha.md)
 COLUNAS = [
     "Nº do Processo", "Parte Contrária", "Tribunal/UF",
@@ -95,6 +102,14 @@ def monta_valores(registro):
     obs = registro.get("audiencia_obs")
     if obs and not vazio(obs) and valores.get("Audiência"):
         valores["Audiência"] = f"{valores['Audiência']} — {str(obs).strip()}"
+    # Calcula o prazo de defesa quando não veio uma data real (vazio ou "verificar autos"):
+    # recebimento + 13 dias úteis (sáb/dom pulados, feriados ignorados). É PROVISÓRIO.
+    prazo_atual = valores.get("Prazo de defesa", "")
+    if norm(prazo_atual) in ("", norm(PLACEHOLDER_PRAZO)) and not vazio(registro.get("data_recebimento")):
+        calc = datas.prazo_defesa(registro["data_recebimento"])
+        if calc:
+            valores["Prazo de defesa"] = datas.fmt_br(calc)
+            valores.setdefault("Fonte do prazo", "Provisório")
     return valores
 
 
@@ -174,7 +189,13 @@ def main():
         for coluna, valor in valores.items():
             ci = colmap[coluna]
             atual = ws.cell(row=linha_existente, column=ci).value
-            if vazio(atual):  # só preenche vazios — preserva edição humana
+            substituir = vazio(atual)  # regra geral: só preenche vazios (preserva edição humana)
+            # Exceção: o prazo placeholder "verificar autos" pode ser promovido à data calculada.
+            if (not substituir and coluna == "Prazo de defesa"
+                    and norm(atual) == norm(PLACEHOLDER_PRAZO)
+                    and norm(valor) != norm(PLACEHOLDER_PRAZO)):
+                substituir = True
+            if substituir:
                 ws.cell(row=linha_existente, column=ci, value=valor)
                 atualizados.append(coluna)
         wb.save(args.planilha)

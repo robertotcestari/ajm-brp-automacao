@@ -73,7 +73,9 @@ Produza um registro com estes campos (use exatamente estes nomes):
 - `audiencia` — data/hora se o corpo informar; `verificar autos` se não informar; `não` só
   se o e-mail afirmar que não há audiência.
 - `audiencia_obs` — detalhes úteis (ex.: "telepresencial via Microsoft Teams").
-- `prazo_defesa` — quase nunca vem no e-mail → `verificar autos`.
+- `prazo_defesa` — quase nunca vem no e-mail → deixe `verificar autos`. **Não calcule à mão
+  aqui**: o `registrar-planilha-brp` e o `agenda-brp` calculam sozinhos um prazo *provisório*
+  (`data_recebimento + 13 dias úteis`) — por isso a `data_recebimento` correta é tão crítica.
 - `fonte_prazo` — `E-mail`, `Autos` ou `Provisório` (ver `assets/schema-planilha.md`).
 
 ### Regra crítica: data de recebimento
@@ -105,11 +107,42 @@ Depois de extrair e confirmar, encadeie as skills de ação:
    `assets/schema-planilha.md`), conferindo antes se o número já existe.
 2. `criar-pasta-processo` — cria a pasta no padrão do escritório
    (`assets/nomenclatura-pastas.md`) e devolve o caminho.
-3. `agenda-brp` — lança na agenda BRP a audiência (quando houver) e uma tarefa de
-   "verificar prazo nos autos" quando o prazo ainda não for conhecido.
+3. `agenda-brp` — lança na agenda BRP **até dois eventos**: a audiência (somente quando há
+   data/hora confirmada — sem data, nenhum evento) e o **prazo de defesa**, cuja data é
+   **calculada** (`data_recebimento + 13 dias úteis`, sáb/dom pulados, feriados ignorados) e
+   entra como prazo **provisório** a confirmar nos autos.
 
 Se alguma ação não puder rodar (sem acesso ao servidor, à agenda etc.), registre o que
 conseguiu e sinalize claramente o que ficou pendente, em vez de falhar em silêncio.
+
+## Log de auditoria (obrigatório a cada e-mail)
+
+Para que dê para **depurar no futuro** (ex.: "por que a automação não criou a pasta de X?"),
+toda execução grava um log com os **dados completos**. Logo após processar cada e-mail —
+mesmo quando o resultado for "pulado (duplicado)" ou houve falha numa ação — chame:
+
+```
+python scripts/registrar_log.py --registro '<json>'
+```
+
+O `<json>` deve juntar **três blocos**, para o log ser autoexplicativo:
+
+- `email` — o e-mail **bruto**: `assunto`, `remetente`, `recebido_em`, `message_id` e um
+  trecho (ou a íntegra) do `corpo`. É o que permite reconferir a extração depois.
+- `extraido` — **todos** os campos extraídos (os da seção "Campos a extrair"), exatamente
+  como foram para a planilha.
+- `acoes` — o que cada skill devolveu: `planilha` (inserido/atualizado/pulado),
+  `pasta` (caminho criado/reutilizado) e `agenda` (eventos lançados); e `observacoes` com
+  qualquer pendência (ex.: "sem VPN, pasta não criada").
+
+Onde grava: pasta **`LOGS/` na raiz do projeto** (sobreponível por `--logs-dir` ou pela
+variável `BRP_LOGS_DIR`). Um arquivo por rodada — `AAAAMMDDThh-execucao.jsonl` — com **uma
+linha JSON por e-mail**, então a rodada inteira (vários e-mails) fica no mesmo arquivo. O
+script cria a pasta sozinho e só acrescenta um carimbo de tempo; **não inventa** nada.
+
+O log é **best-effort**: se a gravação falhar, registre o aviso e siga — nunca deixe o log
+travar a triagem. Mas trate a sua ausência como bug: o objetivo é que **toda** citação
+processada deixe rastro.
 
 ## Exemplos reais (carteira BRP)
 

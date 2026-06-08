@@ -30,15 +30,20 @@ hospeda o calendário compartilhado).
 
 ## O que lançar
 
-A partir do registro da citação:
+A partir do registro da citação, **até dois eventos por processo**:
 
-- **Audiência** — se `audiencia` tiver data/hora: evento no horário, categoria `Audiência BRP`
-  (cor vermelha). Inclua no corpo a `audiencia_obs` (ex.: "telepresencial via Teams") e o
-  número do processo.
-- **Prazo de defesa** — se `prazo_defesa` for uma data conhecida: evento de dia inteiro,
-  categoria `Prazo BRP` (cor amarela). Se for `verificar autos`, **não invente data**: crie
-  um evento/tarefa de dia inteiro hoje (ou no dia seguinte) intitulado
-  "Verificar prazo nos autos — <processo>", para a triagem humana abrir os autos e confirmar.
+- **Audiência** (categoria `Audiência BRP`, vermelha) — **somente** quando há data/hora de
+  audiência confirmada. Se `audiencia` for `verificar autos`, `não` ou vazio, **não crie
+  evento de audiência nenhum** — nunca use o dia da execução como data placeholder. O script
+  recusa audiência sem data/hora justamente para evitar esse lixo na agenda. Inclua no corpo a
+  `audiencia_obs` (ex.: "telepresencial via Teams") e o número do processo.
+- **Prazo de defesa** (categoria `Prazo BRP`, amarela) — evento de dia inteiro na data-limite.
+  Essa data é **calculada automaticamente**: `data_recebimento + 13 dias úteis`, pulando apenas
+  sábados e domingos (feriados ignorados de propósito — um prazo mais cedo é mais conservador,
+  menos risco de perder a defesa). É um prazo **PROVISÓRIO**: o corpo do evento avisa para
+  confirmar nos autos. Passe `--recebimento` e o script faz a conta (mesma regra da planilha,
+  em `lib/datas.py`). Só caia para a tarefa `verificar` ("Verificar prazo nos autos") se **nem
+  a data de recebimento** for conhecida.
 
 ## Como executar
 
@@ -48,16 +53,19 @@ imprime o que seria criado sem chamar a rede — use enquanto o registro de app 
 pronto.
 
 ```
-# Audiência (com data/hora)
+# Audiência — SÓ com data/hora confirmada (sem data, não rode: o script recusa)
 python scripts/criar_evento_graph.py --tipo audiencia \
   --numero "0854280-80.2026.8.14.0301" --parte "FELIX NUNES DE ALMEIDA NETO" \
   --inicio "2026-09-30T09:30:00" --obs "telepresencial via Teams"
 
-# Prazo conhecido (dia inteiro)
+# Prazo de defesa — CALCULADO a partir do recebimento (recebimento + 13 dias úteis)
 python scripts/criar_evento_graph.py --tipo prazo \
-  --numero "..." --parte "..." --inicio "2026-06-20"
+  --numero "..." --parte "..." --recebimento "27/05/2026"
 
-# Prazo desconhecido → tarefa de verificação
+# (Opcional) prazo com data já pronta, em vez de calcular:
+python scripts/criar_evento_graph.py --tipo prazo --numero "..." --inicio "2026-06-15"
+
+# Fallback raro — sem nem a data de recebimento, só uma tarefa de verificação:
 python scripts/criar_evento_graph.py --tipo verificar \
   --numero "..." --parte "..." --inicio "2026-06-02"
 ```
@@ -65,6 +73,22 @@ python scripts/criar_evento_graph.py --tipo verificar \
 Depois de lançar, não há campo dedicado de "evento criado" na planilha; registre o sucesso/
 falha no retorno para a orquestração. Se a Graph recusar (token, permissão, calendário não
 encontrado), **relate** — não siga como se tivesse lançado.
+
+## Idempotência (não duplicar eventos)
+
+Rodar a rotina mais de uma vez para o mesmo processo **não cria cópias**. Cada processo tem no
+máximo uma audiência, um prazo e uma tarefa de verificação; a chave é `tipo|número CNJ`
+(a data **não** entra na chave de propósito). O script faz *upsert*:
+
+- **não existe** ainda → cria o evento;
+- **já existe** → atualiza o existente (ex.: audiência remarcada passa a refletir a nova hora);
+- **existe em duplicidade** (cópias de execuções antigas, antes desta correção) → mantém uma e
+  **apaga as sobrando**, consolidando.
+
+O evento mantido recebe um carimbo numa propriedade estendida (`brpKey`), e o casamento também
+reconhece eventos legados pelo número CNJ no assunto — então a primeira rodada após a correção
+já limpa as duplicatas que ficaram para trás. O retorno traz `acao`: `criado`, `atualizado` ou
+`consolidado`.
 
 ## Cores
 

@@ -6,6 +6,3 @@ config/graph.env
 # Temporários
 __pycache__/
 *.pyc
-
-# macOS
-.DS_Store
