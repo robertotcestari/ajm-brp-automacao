@@ -1,0 +1,11 @@
+# Segredos — nunca comitar
+config/graph.env
+*.env
+!config/graph.env.example
+
+# Temporários
+__pycache__/
+*.pyc
+
+# macOS
+.DS_Store

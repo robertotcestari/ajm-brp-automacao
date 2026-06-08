@@ -1,0 +1,10 @@
+{
+  "name": "ajm-brp-automacao",
+  "version": "0.1.0",
+  "description": "Automação do fluxo jurídico da carteira BRP da AJM Advogados: triagem de citações recebidas por e-mail, registro em planilha de controle, criação de pasta do processo, lançamento de audiências e prazos na agenda, e elaboração assistida de defesas a partir da base de teses.",
+  "author": {
+    "name": "Roberto Cestari",
+    "email": "robertotcestari@gmail.com"
+  },
+  "keywords": ["jurídico", "brp", "ajm", "citação", "automação", "advocacia"]
+}
