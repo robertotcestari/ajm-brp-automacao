@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Write BRP process records from SQLite into the control spreadsheet on demand."""
+"""Write BRP process records from SQLite into Claude's dedicated spreadsheet on demand."""
 import argparse
 import json
 import sys
@@ -26,10 +26,13 @@ def planilha_path(explicit: str | None) -> Path:
     if explicit:
         return Path(explicit)
     config = brp_db.load_config()
-    value = config.get("planilha_path")
+    value = config.get("planilha_claude_path")
     if not value:
-        raise ValueError("Informe --planilha ou configure planilha_path em config/brp.config.json.")
-    return brp_db.resolve_path(value, brp_db.ROOT / "Defesas BRP.xlsx")
+        raise ValueError(
+            "Informe --planilha ou configure planilha_claude_path em config/brp.config.json. "
+            "Não use a planilha original da AJM como destino."
+        )
+    return brp_db.resolve_path(value, brp_db.ROOT / "Defesas BRP - Claude.xlsx")
 
 
 def carregar_registros(conn, numero: str | None, todos: bool):
@@ -100,7 +103,7 @@ def aplicar_registro(ws, colmap, registro):
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--db", default=None)
-    ap.add_argument("--planilha", default=None)
+    ap.add_argument("--planilha", default=None, help="Destino .xlsx exclusivo do Claude/automação")
     scope = ap.add_mutually_exclusive_group(required=True)
     scope.add_argument("--numero", help="Registra apenas um processo CNJ vindo do SQLite")
     scope.add_argument("--todos", action="store_true", help="Registra todos os processos do SQLite")
@@ -131,7 +134,7 @@ def main() -> None:
     wb.save(destino)
 
     resumo = {
-        "acao": "planilha_registrada_do_sqlite",
+        "acao": "planilha_claude_registrada_do_sqlite",
         "db": str(db_path),
         "planilha": str(destino),
         "processos_lidos": len(registros),

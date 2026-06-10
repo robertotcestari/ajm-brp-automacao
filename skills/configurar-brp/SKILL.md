@@ -41,7 +41,8 @@ decisão ficar clara; não avance fingindo que a configuração foi validada.
 
 ## O que esta skill grava
 
-- `config/brp.config.json` — dados da máquina (caminho da planilha, base das pastas, nome do
+- `config/brp.config.json` — dados da máquina (caminho da planilha original somente para
+  referência/importação, caminho da planilha exclusiva do Claude, base das pastas, nome do
   calendário, caixa monitorada, filtro de remetente, caminho do SQLite e pasta de backup).
   Modelo em `config/brp.config.example.json`.
 - `config/graph.env` — credenciais do Microsoft Graph + `BRP_MAILBOX` (contém **segredo**;
@@ -73,13 +74,16 @@ busca simples (ex.: `outlook_email_search` por assunto "Processo nº").
 
 Pergunte (uma coisa de cada vez, com o padrão atual como sugestão):
 
-1. **Caminho da planilha** de controle (ex.: `G:\A.Digital\BRP\Defesas BRP.xlsx`).
-2. **Caminho do SQLite local** (padrão `data\ajm-brp.sqlite3`; em produção, uma pasta local do Daniel).
-3. **Pasta de backup** na rede AJM (ex.: `G:\A.Digital\BRP\Backups\sqlite`).
-4. **Base das pastas** dos processos (padrão `G:\A.Digital\BRP`).
-5. **Nome do calendário** (padrão `BRP`) e a **caixa do calendário** (`brp_mailbox`).
-6. **Filtro de remetente** das citações (padrão `@brp.com.br`).
-7. **Credenciais do Azure** (do app "Automacao BRP"): `GRAPH_TENANT_ID`, `GRAPH_CLIENT_ID`,
+1. **Caminho da planilha original da AJM** somente para referência/importação (ex.:
+   `G:\A.Digital\BRP\Defesas BRP.xlsx`).
+2. **Caminho da planilha exclusiva do Claude** (padrão
+   `G:\A.Digital\BRP\Defesas BRP - Claude.xlsx`).
+3. **Caminho do SQLite local** (padrão `data\ajm-brp.sqlite3`; em produção, uma pasta local do Daniel).
+4. **Pasta de backup** na rede AJM (ex.: `G:\A.Digital\BRP\Backups\sqlite`).
+5. **Base das pastas** dos processos (padrão `G:\A.Digital\BRP`).
+6. **Nome do calendário** (padrão `BRP`) e a **caixa do calendário** (`brp_mailbox`).
+7. **Filtro de remetente** das citações (padrão `@brp.com.br`).
+8. **Credenciais do Azure** (do app "Automacao BRP"): `GRAPH_TENANT_ID`, `GRAPH_CLIENT_ID`,
    `GRAPH_CLIENT_SECRET`. Oriente a colar o **Valor** do segredo (não o ID). Não repita o
    segredo de volta na conversa.
 
@@ -96,9 +100,9 @@ Confirme que tudo conversa, sem efeitos colaterais permanentes:
    `importar_planilha.py`; depois inserir um processo de teste e registrar um e-mail de teste;
    confirmar `integrity_check = ok`.
 3. **Backup**: rodar `backup-brp` uma vez e confirmar arquivo `.sqlite3` + `.sha256` na pasta da rede.
-4. **Planilha manual**: rodar `registrar-planilha-brp` lendo o processo de teste do SQLite e
-   escrevendo numa **cópia** da planilha (não na original); conferir que insere/atualiza sem
-   duplicar.
+4. **Planilha Claude manual**: rodar `registrar-planilha-brp` lendo o processo de teste do
+   SQLite e escrevendo na planilha exclusiva do Claude; conferir que cria o arquivo se não
+   existir e que não toca na planilha original da AJM.
 5. **Pasta**: rodar `criar-pasta-processo` em modo `--simular` e mostrar o caminho.
 6. **Calendário**: criar um **evento de teste** no calendário (via `agenda-brp`) e pedir para a
    pessoa conferir no Outlook; orientar a apagar depois. Use `--criar-calendario` se for a

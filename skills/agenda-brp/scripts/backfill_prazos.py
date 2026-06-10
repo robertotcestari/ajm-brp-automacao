@@ -46,7 +46,13 @@ CONFIG = json.loads((Path(__file__).parents[3] / "config" / "brp.config.json")
                     .read_text(encoding="utf-8"))
 MAILBOX = os.environ.get("BRP_MAILBOX", CONFIG.get("brp_mailbox"))
 CALENDARIO = os.environ.get("BRP_CALENDARIO", CONFIG.get("brp_calendario", "BRP"))
-PLANILHA = CONFIG["planilha_path"]
+PLANILHA = (
+    CONFIG.get("planilha_claude_path")
+    or CONFIG.get("planilha_path")
+    or CONFIG.get("planilha_original_path")
+)
+if not PLANILHA:
+    sys.exit("Configure planilha_claude_path em config/brp.config.json para usar o backfill.")
 
 CNJ_RE = re.compile(r"\d{7}-\d{2}\.\d{4}\.\d\.\d{2}\.\d{4}")
 

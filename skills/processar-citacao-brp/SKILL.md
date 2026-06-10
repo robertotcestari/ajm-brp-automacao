@@ -6,8 +6,9 @@ description: >-
   tribunal/UF, comarca, link e chave de acesso aos autos, data de recebimento e
   audiência quando houver. Em seguida orquestra o registro no SQLite local, a criação
   da pasta do processo e o lançamento de audiência/prazo na agenda. Não escreve na
-  planilha automaticamente; a planilha é atualizada manualmente por registrar-planilha-brp,
-  lendo os dados do SQLite. Use esta
+  planilha automaticamente; a planilha exclusiva do Claude é atualizada manualmente por
+  registrar-planilha-brp, lendo os dados do SQLite. A planilha original da AJM não é tocada.
+  Use esta
   skill SEMPRE que aparecer um e-mail de citação da carteira BRP — assuntos no formato
   "Processo nº ... - NOME DA PARTE", mensagens que dizem "recebemos hoje, via DJE, a
   citação", ou qualquer pedido para "triar", "dar entrada" ou "processar" uma citação
@@ -65,8 +66,9 @@ Em produção esta skill **não recebe um arquivo** — ela é disparada por uma
 6. Ao final, registrar o e-mail em `emails_processados` com status `processado`, `ignorado`,
    `erro`, `duplicado` ou `sem_numero_processo`.
 7. Marcar o e-mail como tratado (categoria/flag) quando possível, como reforço.
-8. **Não escrever na planilha nesta rodada.** A planilha só é atualizada quando alguém invocar
-   manualmente `registrar-planilha-brp`, que lê do SQLite e grava no `.xlsx`.
+8. **Não escrever em nenhuma planilha nesta rodada.** A planilha exclusiva do Claude só é
+   atualizada quando alguém invocar manualmente `registrar-planilha-brp`, que lê do SQLite e
+   grava no `.xlsx` separado. Nunca use a planilha original da AJM como destino.
 
 O conector Microsoft 365 disponível é de **leitura/busca**. Escrever no calendário exige um
 componente complementar (MCP próprio sobre a Microsoft Graph) — ver skill `agenda-brp`.
@@ -138,8 +140,8 @@ Depois de extrair e confirmar, encadeie as skills de ação:
    entra como prazo **provisório** a confirmar nos autos.
 
 Não chame `registrar-planilha-brp` durante o intake. Quando a equipe pedir para atualizar a
-planilha, chame `registrar-planilha-brp`; ela deve ler o SQLite e escrever no `.xlsx` de forma
-manual e controlada.
+planilha do Claude, chame `registrar-planilha-brp`; ela deve ler o SQLite e escrever no `.xlsx`
+separado de forma manual e controlada. A planilha original da AJM é somente referência/importação.
 
 Se alguma ação não puder rodar (sem acesso ao servidor, à agenda etc.), registre o que
 conseguiu e sinalize claramente o que ficou pendente, em vez de falhar em silêncio.

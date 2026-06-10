@@ -14,8 +14,8 @@ automação editando arquivos `.md` — sem precisar mexer em código.
 4. As skills de ação registram o caso no **SQLite**, criam a **pasta** do processo e lançam
    **audiência** e **prazo** na **agenda** com cores diferenciadas.
 5. A skill `backup-brp` faz backup validado do SQLite para a pasta de rede da AJM.
-6. A planilha `.xlsx` só é escrita quando alguém invoca manualmente `registrar-planilha-brp`,
-   que lê o SQLite e aplica o mesmo processo de dedup/atualização controlada.
+6. A planilha `.xlsx` exclusiva do Claude/automação só é escrita quando alguém invoca
+   manualmente `registrar-planilha-brp`; a planilha original da AJM não é tocada.
 
 A elaboração assistida de defesas (Fase 2) fica na skill `gerar-defesa-brp`.
 
@@ -46,7 +46,8 @@ ajm-brp-automacao/
 - **Pasta dos processos:** acesso ao servidor/VPN onde ficam as pastas.
 - **Banco local:** SQLite em `data/ajm-brp.sqlite3` ou no caminho definido em `config/brp.config.json`.
 - **Backup:** pasta de rede da AJM acessível pela máquina do Daniel.
-- **Planilha de controle:** escrita manual invocada a partir do SQLite, no padrão definido em `assets/schema-planilha.md`.
+- **Planilha de controle Claude:** arquivo separado, por padrão `Defesas BRP - Claude.xlsx`,
+  escrito manualmente a partir do SQLite. A planilha original da AJM é somente referência/importação.
 
 ## Status
 

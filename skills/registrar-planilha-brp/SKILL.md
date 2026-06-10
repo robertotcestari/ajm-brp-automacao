@@ -1,30 +1,37 @@
 ---
 name: registrar-planilha-brp
 description: >-
-  MANUAL. Lê os processos salvos no SQLite local da automação BRP e registra/atualiza a
-  planilha de controle da AJM usando o mesmo processo de dedup pelo número CNJ e preservação
-  de células já preenchidas. Não use automaticamente depois de processar-citacao-brp; invoque
-  somente quando alguém pedir para atualizar a planilha.
+  MANUAL. Lê os processos salvos no SQLite local da automação BRP e registra/atualiza uma
+  planilha exclusiva do Claude/automação, separada da planilha original da AJM. Usa o mesmo
+  processo de dedup pelo número CNJ e preservação de células já preenchidas. Não use
+  automaticamente depois de processar-citacao-brp; invoque somente quando alguém pedir para
+  atualizar a planilha do Claude.
 ---
 
 # Registrar na planilha de controle BRP
 
 Esta skill é **manual** e não faz parte do intake automático. Na v0.3, a memória operacional é
-o SQLite (`database-brp`); quando a equipe quiser atualizar a planilha, esta skill lê do SQLite
-e escreve no `.xlsx` usando o mesmo processo controlado de antes.
+o SQLite (`database-brp`); quando a equipe quiser atualizar a visão em planilha, esta skill lê
+do SQLite e escreve em um `.xlsx` exclusivo do Claude/automação.
 
-A planilha mora em um **arquivo `.xlsx` no servidor/VPN local**. Use esta skill somente quando
-alguém pedir explicitamente para atualizar a planilha.
+A automação **não toca na planilha original da AJM**. O destino deve ser um arquivo separado,
+por padrão:
+
+```text
+G:\A.Digital\BRP\Defesas BRP - Claude.xlsx
+```
+
+Se esse arquivo ainda não existir, o script cria uma nova planilha com o schema esperado.
 
 ## Acompanhamento por TODO
 
 Antes de registrar a planilha, chame a ferramenta de TODO do Claude para deixar claro o escopo:
 
 1. Confirmar banco SQLite origem.
-2. Confirmar planilha `.xlsx` destino.
+2. Confirmar planilha `.xlsx` destino exclusiva do Claude.
 3. Ler processo(s) do SQLite.
-4. Aplicar dedup/atualização na planilha.
-5. Salvar planilha e resumir inseridos/atualizados/sem alteração.
+4. Aplicar dedup/atualização na planilha do Claude.
+5. Salvar planilha do Claude e resumir inseridos/atualizados/sem alteração.
 
 ## Princípios
 
@@ -56,10 +63,11 @@ python scripts/registrar_do_sqlite.py --numero "<CNJ>" --planilha "<caminho.xlsx
 python scripts/registrar_do_sqlite.py --todos --planilha "<caminho.xlsx>"
 ```
 
-Se `--planilha` não for informado, o script usa `planilha_path` de `config/brp.config.json`.
-O script exige `--numero` ou `--todos` para evitar escrita ampla acidental.
+Se `--planilha` não for informado, o script usa `planilha_claude_path` de
+`config/brp.config.json`. O script exige `--numero` ou `--todos` para evitar escrita ampla
+acidental. Não use o caminho da planilha original da AJM como destino.
 
-Se o caminho da planilha não estiver acessível (sem VPN, arquivo aberto/bloqueado), **não
+Se o caminho da planilha do Claude não estiver acessível (sem VPN, arquivo aberto/bloqueado), **não
 falhe em silêncio**: relate o que tentou e o processo que seria gravado, para a triagem
 humana resolver.
 
@@ -81,5 +89,5 @@ Registro no SQLite (do Exemplo 3, TJPA):
 }
 ```
 
-Resultado esperado: como o número ainda não está na planilha, insere uma nova linha; se já
+Resultado esperado: como o número ainda não está na planilha do Claude, insere uma nova linha; se já
 existir, preenche apenas campos vazios e preserva as edições humanas.
