@@ -11,11 +11,11 @@ automação editando arquivos `.md` — sem precisar mexer em código.
 1. Chega um e-mail de **citação** do Banco BRP em uma caixa da AJM.
 2. A skill `processar-citacao-brp` confere o **SQLite local** para não reprocessar e-mails.
 3. A skill `processar-citacao-brp` **lê e interpreta** o e-mail e extrai os dados estruturados.
-4. As skills de ação registram o caso no **SQLite**, criam a **pasta** do processo e lançam
+4. As skills de ação registram o caso no **SQLite**, atualizam a **planilha exclusiva do Claude**,
+   criam a **pasta** do processo e lançam
    **audiência** e **prazo** na **agenda** com cores diferenciadas.
 5. A skill `backup-brp` faz backup validado do SQLite para a pasta de rede da AJM.
-6. A planilha `.xlsx` exclusiva do Claude/automação só é escrita quando alguém invoca
-   manualmente `registrar-planilha-brp`; a planilha original da AJM não é tocada.
+6. A planilha original da AJM não é tocada.
 
 A elaboração assistida de defesas (Fase 2) fica na skill `gerar-defesa-brp`.
 
@@ -29,7 +29,7 @@ ajm-brp-automacao/
 │   ├── processar-citacao-brp/     # intake: lê o e-mail, extrai dados, orquestra
 │   ├── database-brp/              # SQLite local: processos, e-mails processados e logs
 │   ├── backup-brp/                # backup diário validado do SQLite para a rede AJM
-│   ├── registrar-planilha-brp/    # manual: lê SQLite e registra na planilha
+│   ├── registrar-planilha-brp/    # lê SQLite e registra na planilha Claude
 │   ├── criar-pasta-processo/      # cria a pasta no padrão do escritório
 │   ├── agenda-brp/                # lança audiência (vermelho) e prazo (amarelo)
 │   └── gerar-defesa-brp/          # Fase 2: rascunho de defesa
@@ -47,7 +47,7 @@ ajm-brp-automacao/
 - **Banco local:** SQLite em `data/ajm-brp.sqlite3` ou no caminho definido em `config/brp.config.json`.
 - **Backup:** pasta de rede da AJM acessível pela máquina do Daniel.
 - **Planilha de controle Claude:** arquivo separado, por padrão `Defesas BRP - Claude.xlsx`,
-  escrito manualmente a partir do SQLite. A planilha original da AJM é somente referência/importação.
+  atualizado a partir do SQLite durante o intake. A planilha original da AJM é somente referência/importação.
 
 ## Status
 

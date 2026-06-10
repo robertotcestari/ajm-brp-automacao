@@ -1,18 +1,17 @@
 ---
 name: registrar-planilha-brp
 description: >-
-  MANUAL. Lê os processos salvos no SQLite local da automação BRP e registra/atualiza uma
-  planilha exclusiva do Claude/automação, separada da planilha original da AJM. Usa o mesmo
-  processo de dedup pelo número CNJ e preservação de células já preenchidas. Não use
-  automaticamente depois de processar-citacao-brp; invoque somente quando alguém pedir para
-  atualizar a planilha do Claude.
+  Lê os processos salvos no SQLite local da automação BRP e registra/atualiza uma planilha
+  exclusiva do Claude/automação, separada da planilha original da AJM. Usa o mesmo processo de
+  dedup pelo número CNJ e preservação de células já preenchidas. Use sempre depois de
+  processar-citacao-brp para manter a planilha do Claude atualizada.
 ---
 
 # Registrar na planilha de controle BRP
 
-Esta skill é **manual** e não faz parte do intake automático. Na v0.3, a memória operacional é
-o SQLite (`database-brp`); quando a equipe quiser atualizar a visão em planilha, esta skill lê
-do SQLite e escreve em um `.xlsx` exclusivo do Claude/automação.
+Esta skill escreve a visão em planilha do Claude/automação a partir do SQLite. Na v0.3, a
+memória operacional é o SQLite (`database-brp`), mas `processar-citacao-brp` deve chamar esta
+skill sempre depois de gravar um processo para manter o `.xlsx` separado atualizado.
 
 A automação **não toca na planilha original da AJM**. O destino deve ser um arquivo separado,
 por padrão:
@@ -25,7 +24,9 @@ Se esse arquivo ainda não existir, o script cria uma nova planilha com o schema
 
 ## Acompanhamento por TODO
 
-Antes de registrar a planilha, chame a ferramenta de TODO do Claude para deixar claro o escopo:
+Antes de registrar a planilha, chame a ferramenta de TODO do Claude para deixar claro o escopo
+quando a operação for em lote ou avulsa. Durante `processar-citacao-brp`, use o item de TODO da
+própria skill de intake:
 
 1. Confirmar banco SQLite origem.
 2. Confirmar planilha `.xlsx` destino exclusiva do Claude.
@@ -59,7 +60,7 @@ Use o script `scripts/registrar_do_sqlite.py`, que lê o SQLite e usa o mesmo pr
 # um processo específico
 python scripts/registrar_do_sqlite.py --numero "<CNJ>" --planilha "<caminho.xlsx>"
 
-# todos os processos do SQLite
+# todos os processos do SQLite (uso avulso/lote)
 python scripts/registrar_do_sqlite.py --todos --planilha "<caminho.xlsx>"
 ```
 

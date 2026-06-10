@@ -4,11 +4,9 @@ description: >-
   Lê e interpreta um e-mail de citação do Banco BRP (encaminhado pela equipe da AJM
   Advogados) e extrai os dados estruturados do processo: número CNJ, parte contrária,
   tribunal/UF, comarca, link e chave de acesso aos autos, data de recebimento e
-  audiência quando houver. Em seguida orquestra o registro no SQLite local, a criação
-  da pasta do processo e o lançamento de audiência/prazo na agenda. Não escreve na
-  planilha automaticamente; a planilha exclusiva do Claude é atualizada manualmente por
-  registrar-planilha-brp, lendo os dados do SQLite. A planilha original da AJM não é tocada.
-  Use esta
+  audiência quando houver. Em seguida orquestra o registro no SQLite local, a atualização da
+  planilha exclusiva do Claude, a criação da pasta do processo e o lançamento de audiência/prazo
+  na agenda. A planilha original da AJM não é tocada. Use esta
   skill SEMPRE que aparecer um e-mail de citação da carteira BRP — assuntos no formato
   "Processo nº ... - NOME DA PARTE", mensagens que dizem "recebemos hoje, via DJE, a
   citação", ou qualquer pedido para "triar", "dar entrada" ou "processar" uma citação
@@ -38,9 +36,10 @@ claro qual é o próximo passo. Para uma rodada normal, use esta sequência:
 2. Verificar idempotência no SQLite.
 3. Extrair dados do e-mail novo.
 4. Registrar processo e e-mail no SQLite.
-5. Criar ou reutilizar pasta do processo.
-6. Lançar audiência/prazo na agenda.
-7. Gravar log de auditoria e resumir pendências.
+5. Registrar/atualizar a planilha exclusiva do Claude.
+6. Criar ou reutilizar pasta do processo.
+7. Lançar audiência/prazo na agenda.
+8. Gravar log de auditoria e resumir pendências.
 
 Se alguma etapa for pulada por configuração da instalação, marque como concluída com a razão
 no resumo, não deixe o TODO ambíguo.
@@ -63,12 +62,13 @@ Em produção esta skill **não recebe um arquivo** — ela é disparada por uma
 4. Se for novo, extrair os dados (seção abaixo).
 5. **Não duplicar processo**: `database-brp` usa `numero_processo` como chave única e
    preserva dados já preenchidos.
-6. Ao final, registrar o e-mail em `emails_processados` com status `processado`, `ignorado`,
+6. Após gravar o processo no SQLite, chamar `registrar-planilha-brp` para atualizar a planilha
+   exclusiva do Claude a partir do SQLite. Use o escopo do processo atual:
+   `python skills/registrar-planilha-brp/scripts/registrar_do_sqlite.py --numero "<CNJ>"`.
+   Não use a planilha original da AJM como destino.
+7. Ao final, registrar o e-mail em `emails_processados` com status `processado`, `ignorado`,
    `erro`, `duplicado` ou `sem_numero_processo`.
-7. Marcar o e-mail como tratado (categoria/flag) quando possível, como reforço.
-8. **Não escrever em nenhuma planilha nesta rodada.** A planilha exclusiva do Claude só é
-   atualizada quando alguém invocar manualmente `registrar-planilha-brp`, que lê do SQLite e
-   grava no `.xlsx` separado. Nunca use a planilha original da AJM como destino.
+8. Marcar o e-mail como tratado (categoria/flag) quando possível, como reforço.
 
 O conector Microsoft 365 disponível é de **leitura/busca**. Escrever no calendário exige um
 componente complementar (MCP próprio sobre a Microsoft Graph) — ver skill `agenda-brp`.
@@ -132,16 +132,14 @@ Depois de extrair e confirmar, encadeie as skills de ação:
 
 1. `database-brp` — grava/atualiza o processo em `processos` e registra o e-mail em
    `emails_processados`.
-2. `criar-pasta-processo` — cria a pasta no padrão do escritório
+2. `registrar-planilha-brp` — lê o processo do SQLite e registra/atualiza a planilha exclusiva
+   do Claude (`planilha_claude_path`). Nunca escreva na planilha original da AJM.
+3. `criar-pasta-processo` — cria a pasta no padrão do escritório
    (`assets/nomenclatura-pastas.md`) e devolve o caminho.
-3. `agenda-brp` — lança na agenda BRP **até dois eventos**: a audiência (somente quando há
+4. `agenda-brp` — lança na agenda BRP **até dois eventos**: a audiência (somente quando há
    data/hora confirmada — sem data, nenhum evento) e o **prazo de defesa**, cuja data é
    **calculada** (`data_recebimento + 13 dias úteis`, sáb/dom pulados, feriados ignorados) e
    entra como prazo **provisório** a confirmar nos autos.
-
-Não chame `registrar-planilha-brp` durante o intake. Quando a equipe pedir para atualizar a
-planilha do Claude, chame `registrar-planilha-brp`; ela deve ler o SQLite e escrever no `.xlsx`
-separado de forma manual e controlada. A planilha original da AJM é somente referência/importação.
 
 Se alguma ação não puder rodar (sem acesso ao servidor, à agenda etc.), registre o que
 conseguiu e sinalize claramente o que ficou pendente, em vez de falhar em silêncio.
@@ -163,7 +161,7 @@ O `<json>` deve juntar **três blocos**, para o log ser autoexplicativo:
 - `extraido` — **todos** os campos extraídos (os da seção "Campos a extrair"), exatamente
   como foram para o SQLite.
 - `acoes` — o que cada skill devolveu: `database` (processo/e-mail inserido/atualizado/pulado),
-  `pasta` (caminho criado/reutilizado)
+  `planilha_claude` (inserido/atualizado/sem alteração), `pasta` (caminho criado/reutilizado)
   e `agenda` (eventos lançados); e `observacoes` com
   qualquer pendência (ex.: "sem VPN, pasta não criada").
 

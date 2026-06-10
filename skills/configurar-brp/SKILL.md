@@ -32,7 +32,7 @@ use os nomes dos passos abaixo para a pessoa saber onde está e aonde vai chegar
 4. Gravar configuração local.
 5. Inicializar e validar SQLite.
 6. Testar backup.
-7. Testar planilha, pasta e calendário.
+7. Testar planilha Claude, pasta e calendário.
 8. Configurar tarefas agendadas.
 9. Resumir instalação e pendências.
 
@@ -100,7 +100,7 @@ Confirme que tudo conversa, sem efeitos colaterais permanentes:
    `importar_planilha.py`; depois inserir um processo de teste e registrar um e-mail de teste;
    confirmar `integrity_check = ok`.
 3. **Backup**: rodar `backup-brp` uma vez e confirmar arquivo `.sqlite3` + `.sha256` na pasta da rede.
-4. **Planilha Claude manual**: rodar `registrar-planilha-brp` lendo o processo de teste do
+4. **Planilha Claude**: rodar `registrar-planilha-brp` lendo o processo de teste do
    SQLite e escrevendo na planilha exclusiva do Claude; conferir que cria o arquivo se não
    existir e que não toca na planilha original da AJM.
 5. **Pasta**: rodar `criar-pasta-processo` em modo `--simular` e mostrar o caminho.
