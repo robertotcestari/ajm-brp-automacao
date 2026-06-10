@@ -1,12 +1,12 @@
 ---
 name: processar-citacao-brp
 description: >-
-  Lê e interpreta um e-mail de citação do Banco BRP (encaminhado pela equipe da AJM
-  Advogados) e extrai os dados estruturados do processo: número CNJ, parte contrária,
-  tribunal/UF, comarca, link e chave de acesso aos autos, data de recebimento e
-  audiência quando houver. Em seguida orquestra o registro no SQLite local, a atualização da
-  planilha exclusiva do Claude, a criação da pasta do processo e o lançamento de audiência/prazo
-  na agenda. A planilha original da AJM não é tocada. Use esta
+  Lê e interpreta apenas o e-mail ORIGINAL de citação do Banco BRP e extrai os dados
+  estruturados do processo: número CNJ, parte contrária, tribunal/UF, comarca, link e chave de
+  acesso aos autos, data de recebimento e audiência quando houver. Respostas, encaminhamentos e
+  mensagens derivadas do e-mail original devem ser ignoradas. Em seguida orquestra o registro no
+  SQLite local, a atualização da planilha exclusiva do Claude, a criação da pasta do processo e o
+  lançamento de audiência/prazo na agenda. A planilha original da AJM não é tocada. Use esta
   skill SEMPRE que aparecer um e-mail de citação da carteira BRP — assuntos no formato
   "Processo nº ... - NOME DA PARTE", mensagens que dizem "recebemos hoje, via DJE, a
   citação", ou qualquer pedido para "triar", "dar entrada" ou "processar" uma citação
@@ -21,10 +21,11 @@ citação é um *gatilho*: ele avisa que chegou um processo novo, mas a maior pa
 trabalho é ler esse e-mail como um advogado leria — entendendo o conteúdo, não casando
 padrões rígidos — e transformá-lo numa linha estruturada que alimenta o resto do fluxo.
 
-Por que "ler como advogado" e não com regex: os e-mails chegam encaminhados de formas
-diferentes (o "ENC:" do Outlook, o "Fwd: ... Enviado do meu iPhone"), com pontuação e
-quebras variando, e a audiência às vezes aparece numa frase solta no meio do texto. Um
-padrão fixo quebra nessas variações; a leitura compreensiva, não.
+Regra crítica: **processe só o e-mail original da BRP**. Respostas (`Re:`, `RES:`),
+encaminhamentos (`Fwd:`, `FW:`, `ENC:`) e qualquer mensagem com cabeçalhos
+`In-Reply-To`/`References` não devem gerar novo processo, nova planilha, nova pasta ou novo
+evento. Elas podem citar o mesmo processo, mas são conversa derivada; se o original já entrou,
+não há novo intake.
 
 ## Acompanhamento por TODO
 
@@ -33,13 +34,14 @@ dos passos. Mantenha exatamente um item como `in_progress`, marque cada etapa co
 claro qual é o próximo passo. Para uma rodada normal, use esta sequência:
 
 1. Buscar e-mails candidatos.
-2. Verificar idempotência no SQLite.
-3. Extrair dados do e-mail novo.
-4. Registrar processo e e-mail no SQLite.
-5. Registrar/atualizar a planilha exclusiva do Claude.
-6. Criar ou reutilizar pasta do processo.
-7. Lançar audiência/prazo na agenda.
-8. Gravar log de auditoria e resumir pendências.
+2. Separar e-mails originais de respostas/encaminhamentos.
+3. Verificar idempotência no SQLite.
+4. Extrair dados do e-mail original novo.
+5. Registrar processo e e-mail no SQLite.
+6. Registrar/atualizar a planilha exclusiva do Claude.
+7. Criar ou reutilizar pasta do processo.
+8. Lançar audiência/prazo na agenda.
+9. Gravar log de auditoria e resumir pendências.
 
 Se alguma etapa for pulada por configuração da instalação, marque como concluída com a razão
 no resumo, não deixe o TODO ambíguo.
@@ -51,24 +53,36 @@ Em produção esta skill **não recebe um arquivo** — ela é disparada por uma
 (`outlook_email_search`). O fluxo de cada execução:
 
 1. Buscar na caixa monitorada os e-mails de citação **recebidos desde a última execução**.
-   Filtro: remetente do **Banco BRP** — domínio `@brp.com.br` (o contato é
+   Filtro primário: remetente do **Banco BRP** — domínio `@brp.com.br` (o contato é
    `kristian@brp.com.br`, com cópia para silvana@/anaheloisa@/sergio@brp.com.br) — e assunto no
-   padrão "Processo nº ...". Em testes, os e-mails podem chegar reencaminhados (de um Gmail ou
-   de outro advogado); nesse caso o remetente do envelope muda, mas o cabeçalho original do BRP
-   continua no corpo — use-o para confirmar e para a data de recebimento.
-2. Para cada e-mail, consultar `database-brp`:
-   `python skills/database-brp/scripts/verificar_email.py --message-id "<id do Graph>"`.
-3. Se o e-mail já estiver em `emails_processados`, pular por idempotência.
-4. Se for novo, extrair os dados (seção abaixo).
-5. **Não duplicar processo**: `database-brp` usa `numero_processo` como chave única e
+   padrão "Processo nº ...".
+2. Antes de extrair dados, classificar a mensagem:
+   - **Original processável:** mensagem enviada pelo domínio `@brp.com.br`, assunto de citação
+     sem prefixo de resposta/encaminhamento, e sem cabeçalhos `In-Reply-To`/`References`.
+   - **Resposta/derivada:** qualquer mensagem com prefixo `Re:`, `RES:`, `Fwd:`, `FW:`, `ENC:`,
+     ou cabeçalhos `In-Reply-To`/`References`.
+   - **Encaminhamento:** envelope de outro remetente com corpo contendo o e-mail original da BRP.
+     Não processe como novo intake. Registre como `ignorado` se for útil para auditoria.
+3. Para cada mensagem original, consultar `database-brp` com todos os identificadores disponíveis:
+   `python skills/database-brp/scripts/verificar_email.py --message-id "<id do Graph>" --internet-message-id "<Message-ID>"`.
+   Para respostas, passe também cada id de `References`/`In-Reply-To` como
+   `--reference-message-id "<Message-ID referenciado>"`.
+4. Se a própria mensagem ou qualquer referência dela já estiver em `emails_processados`, pular
+   por idempotência. Isso evita reprocessar uma resposta de advogado ao e-mail original da BRP.
+5. Se a mensagem for resposta/encaminhamento/derivada, **não extraia dados do processo** e não
+   acione nenhuma etapa de processo, planilha, pasta ou agenda. Registre apenas o e-mail como
+   `ignorado` em `emails_processados`, com `raw_ref` apontando para o motivo (`resposta`,
+   `encaminhamento`, `referencia_original_processada`, etc.).
+6. Se for e-mail original novo, extrair os dados (seção abaixo).
+7. **Não duplicar processo**: `database-brp` usa `numero_processo` como chave única e
    preserva dados já preenchidos.
-6. Após gravar o processo no SQLite, chamar `registrar-planilha-brp` para atualizar a planilha
+8. Após gravar o processo no SQLite, chamar `registrar-planilha-brp` para atualizar a planilha
    exclusiva do Claude a partir do SQLite. Use o escopo do processo atual:
    `python skills/registrar-planilha-brp/scripts/registrar_do_sqlite.py --numero "<CNJ>"`.
    Não use a planilha original da AJM como destino.
-7. Ao final, registrar o e-mail em `emails_processados` com status `processado`, `ignorado`,
-   `erro`, `duplicado` ou `sem_numero_processo`.
-8. Marcar o e-mail como tratado (categoria/flag) quando possível, como reforço.
+9. Ao final, registrar o e-mail original em `emails_processados` com status `processado`,
+   `ignorado`, `erro`, `duplicado` ou `sem_numero_processo`.
+10. Marcar o e-mail como tratado (categoria/flag) quando possível, como reforço.
 
 O conector Microsoft 365 disponível é de **leitura/busca**. Escrever no calendário exige um
 componente complementar (MCP próprio sobre a Microsoft Graph) — ver skill `agenda-brp`.
@@ -76,8 +90,7 @@ componente complementar (MCP próprio sobre a Microsoft Graph) — ver skill `ag
 ## Como o e-mail é, na prática
 
 - O remetente original é o contato do **Banco BRP** (ex.: "Kristian Olaf Olsen - Banco BRP"),
-  que escreve para uma lista de advogados da AJM. Alguém da AJM **reencaminha** para a caixa
-  monitorada.
+  que escreve para uma lista de advogados da AJM.
 - O **assunto** quase sempre traz: `Processo nº <NÚMERO CNJ> - <NOME DA PARTE>`.
 - O **corpo** costuma dizer algo como *"Recebemos hoje, via DJE, a citação do processo em
   referência."* e, **quando há**, acrescenta:
@@ -86,6 +99,21 @@ componente complementar (MCP próprio sobre a Microsoft Graph) — ver skill `ag
   - instruções (ex.: audiência por Microsoft Teams).
 - Os **anexos** normalmente são só a assinatura/logo do BRP — **a petição inicial não vem
   anexada**. Não conte com ela aqui.
+
+## O que não processar
+
+Não processe como citação nova:
+
+- respostas de advogados, do BRP ou de terceiros ao e-mail original;
+- encaminhamentos do e-mail original para outra pessoa/caixa;
+- mensagens com assunto começando por `Re:`, `RES:`, `Fwd:`, `FW:` ou `ENC:`;
+- mensagens com cabeçalhos `In-Reply-To` ou `References`;
+- qualquer e-mail cujo `References`/`In-Reply-To` aponte para um `internet_message_id` já
+  gravado em `emails_processados`.
+
+Para esses casos, o output deve ser um resumo curto: `ignorado`, motivo, `message_id`,
+`internet_message_id` e, se houver, o `message_id` original referenciado. Não crie/atualize
+processo, planilha, pasta ou agenda.
 
 ## Campos a extrair
 
@@ -107,11 +135,10 @@ Produza um registro com estes campos (use exatamente estes nomes):
 
 ### Regra crítica: data de recebimento
 
-A `data_recebimento` é a data do **e-mail ORIGINAL do BRP**, não a data em que alguém
-reencaminhou. Quando alguém da AJM encaminha dias depois, a data do topo da mensagem é a do
-encaminhamento — ignore-a. Procure no corpo o cabeçalho do e-mail original ("Enviado:" /
-"Data:") e a frase "Recebemos hoje, via DJE, a citação": a data desse envio original é a que
-vale, porque é dela que corre o prazo. Errar aqui contamina o cálculo de prazo lá na frente.
+A `data_recebimento` é a data do **e-mail original do BRP**. Como respostas e encaminhamentos
+não são processados, não use datas de mensagens derivadas. A frase "Recebemos hoje, via DJE, a
+citação" se refere à data desse envio original; errar aqui contamina o cálculo de prazo lá na
+frente.
 
 ### Princípio: nunca inventar
 
@@ -157,7 +184,8 @@ python scripts/registrar_log.py --registro '<json>'
 O `<json>` deve juntar **três blocos**, para o log ser autoexplicativo:
 
 - `email` — o e-mail **bruto**: `assunto`, `remetente`, `recebido_em`, `message_id` e um
-  trecho (ou a íntegra) do `corpo`. É o que permite reconferir a extração depois.
+  trecho (ou a íntegra) do `corpo`; inclua também `internet_message_id`, `in_reply_to` e
+  `references` quando disponíveis. É o que permite reconferir a extração depois.
 - `extraido` — **todos** os campos extraídos (os da seção "Campos a extrair"), exatamente
   como foram para o SQLite.
 - `acoes` — o que cada skill devolveu: `database` (processo/e-mail inserido/atualizado/pulado),
@@ -203,12 +231,12 @@ Extração:
 **Exemplo 3 — com audiência no corpo (TJPA, telepresencial)**
 Assunto: `Processo nº 0854280-80.2026.8.14.0301 - FELIX NUNES DE ALMEIDA NETO`
 Corpo: "Foi designada audiência para o dia 30/09/2026, às 9:30h" + instrução de audiência por
-Microsoft Teams. Encaminhado pelo iPhone em 01/06, mas o e-mail original do BRP é de 27/05.
+Microsoft Teams. O e-mail original do BRP é de 27/05.
 Extração:
 - numero_processo: `0854280-80.2026.8.14.0301`
 - parte_contraria: `FELIX NUNES DE ALMEIDA NETO`
 - tribunal_uf: `TJPA / PA`  (J=8, TR=14)
 - link_autos: — · chave: —
-- data_recebimento: `27/05/2026`  ← data do e-mail original, NÃO a do encaminhamento (01/06)
+- data_recebimento: `27/05/2026`  ← data do e-mail original
 - audiencia: `30/09/2026 09:30` · audiencia_obs: `telepresencial via Microsoft Teams (solicitar até o dia anterior)`
 - prazo_defesa: `verificar autos` · fonte_prazo: `E-mail` (para a audiência)

@@ -289,6 +289,17 @@ def email_processado(conn: sqlite3.Connection, message_id: str) -> dict[str, Any
     )
 
 
+def email_processado_por_internet_message_id(
+    conn: sqlite3.Connection, internet_message_id: str
+) -> dict[str, Any] | None:
+    return row_to_dict(
+        conn.execute(
+            "SELECT * FROM emails_processados WHERE internet_message_id = ?",
+            (internet_message_id,),
+        ).fetchone()
+    )
+
+
 def log_acao(
     conn: sqlite3.Connection,
     *,

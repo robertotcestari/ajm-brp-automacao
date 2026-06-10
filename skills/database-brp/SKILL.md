@@ -96,6 +96,8 @@ Campos esperados:
   "remetente": "...",
   "destinatarios": "...",
   "recebido_em": "...",
+  "in_reply_to": "...",
+  "references": ["..."],
   "numero_processo": "...",
   "status": "processado",
   "raw_ref": "graph://...",
@@ -113,5 +115,15 @@ Antes de processar um e-mail:
 python skills/database-brp/scripts/verificar_email.py --message-id "<id do Graph>"
 ```
 
-Se `processado = true`, não processe de novo; registre no resumo da execução que o e-mail
-foi pulado por idempotência.
+Quando houver cabeçalhos RFC, passe também:
+
+```bash
+python skills/database-brp/scripts/verificar_email.py \
+  --message-id "<id do Graph>" \
+  --internet-message-id "<Message-ID>" \
+  --reference-message-id "<id em References/In-Reply-To>"
+```
+
+Se `processado = true`, não processe de novo; registre no resumo da execução que o e-mail foi
+pulado por idempotência. Em respostas, `reference_message_id` pode apontar para o e-mail
+original já processado.
