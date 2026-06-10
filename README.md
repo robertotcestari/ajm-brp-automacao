@@ -9,9 +9,11 @@ automação editando arquivos `.md` — sem precisar mexer em código.
 ## Fluxo automatizado (Fase 1)
 
 1. Chega um e-mail de **citação** do Banco BRP em uma caixa da AJM.
-2. A skill `processar-citacao-brp` **lê e interpreta** o e-mail e extrai os dados estruturados.
-3. As skills de ação registram o caso na **planilha**, criam a **pasta** do processo e lançam
+2. A skill `processar-citacao-brp` confere o **SQLite local** para não reprocessar e-mails.
+3. A skill `processar-citacao-brp` **lê e interpreta** o e-mail e extrai os dados estruturados.
+4. As skills de ação registram o caso no **SQLite** (e, quando necessário, na planilha), criam a **pasta** do processo e lançam
    **audiência** e **prazo** na **agenda** com cores diferenciadas.
+5. A skill `backup-brp` faz backup validado do SQLite para a pasta de rede da AJM.
 
 A elaboração assistida de defesas (Fase 2) fica na skill `gerar-defesa-brp`.
 
@@ -23,6 +25,8 @@ ajm-brp-automacao/
 ├── skills/
 │   ├── configurar-brp/            # assistente de instalação/configuração da máquina
 │   ├── processar-citacao-brp/     # intake: lê o e-mail, extrai dados, orquestra
+│   ├── database-brp/              # SQLite local: processos, e-mails processados e logs
+│   ├── backup-brp/                # backup diário validado do SQLite para a rede AJM
 │   ├── registrar-planilha-brp/    # grava a linha na planilha de controle
 │   ├── criar-pasta-processo/      # cria a pasta no padrão do escritório
 │   ├── agenda-brp/                # lança audiência (vermelho) e prazo (amarelo)
@@ -38,8 +42,10 @@ ajm-brp-automacao/
 
 - **E-mail e agenda:** caixa Exchange Online (Microsoft 365) da AJM via Microsoft Graph.
 - **Pasta dos processos:** acesso ao servidor/VPN onde ficam as pastas.
-- **Planilha de controle:** arquivo `.xlsx` no padrão definido em `assets/schema-planilha.md`.
+- **Banco local:** SQLite em `data/ajm-brp.sqlite3` ou no caminho definido em `config/brp.config.json`.
+- **Backup:** pasta de rede da AJM acessível pela máquina do Daniel.
+- **Planilha de controle:** arquivo `.xlsx` no padrão definido em `assets/schema-planilha.md` para compatibilidade/exportação.
 
 ## Status
 
-Em desenvolvimento — Fase 1 em construção. Veja cada `SKILL.md` para o estado atual.
+Em desenvolvimento — v0.3 adiciona SQLite local e backup diário. Veja cada `SKILL.md` para o estado atual.

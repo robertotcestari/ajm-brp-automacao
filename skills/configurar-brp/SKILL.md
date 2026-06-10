@@ -5,7 +5,7 @@ description: >-
   interativamente a preparação de uma máquina: verifica pré-requisitos, garante o conector
   Microsoft 365, pergunta os dados específicos da instalação (caixa monitorada, caminho da
   planilha, base das pastas, calendário, credenciais do Azure), grava os arquivos de
-  configuração, roda uma verificação e oferece criar a tarefa agendada. Use SEMPRE que alguém
+  configuração, inicializa o SQLite local, roda uma verificação e oferece criar a tarefa agendada. Use SEMPRE que alguém
   for "instalar", "configurar", "inicializar" ou "preparar" a automação BRP numa máquina (a do
   Daniel ou outra), ou quando pedirem para "reconfigurar"/"trocar" algum dado da automação.
 ---
@@ -23,7 +23,8 @@ planilha, renovar o segredo etc.). Sempre leia a config atual antes e mostre o q
 ## O que esta skill grava
 
 - `config/brp.config.json` — dados da máquina (caminho da planilha, base das pastas, nome do
-  calendário, caixa monitorada, filtro de remetente). Modelo em `config/brp.config.example.json`.
+  calendário, caixa monitorada, filtro de remetente, caminho do SQLite e pasta de backup).
+  Modelo em `config/brp.config.example.json`.
 - `config/graph.env` — credenciais do Microsoft Graph + `BRP_MAILBOX` (contém **segredo**;
   protegido pelo `.gitignore`, nunca exibir o valor de volta nem comitar).
 
@@ -34,6 +35,7 @@ Confirme (rode as checagens e relate o que faltar, com como resolver):
 - **Python 3**: `python --version` (ou `python3`).
 - **openpyxl**: `python -c "import openpyxl"` — se faltar, `pip install openpyxl`.
 - **Acesso ao drive/servidor** onde ficam a planilha e as pastas (ex.: `G:`).
+- **Acesso à pasta de backup** da rede AJM.
 - **Cowork** instalado e logado, e **internet** disponível.
 
 ## Passo 1 — Conector Microsoft 365
@@ -53,10 +55,12 @@ busca simples (ex.: `outlook_email_search` por assunto "Processo nº").
 Pergunte (uma coisa de cada vez, com o padrão atual como sugestão):
 
 1. **Caminho da planilha** de controle (ex.: `G:\A.Digital\BRP\Defesas BRP.xlsx`).
-2. **Base das pastas** dos processos (padrão `G:\A.Digital\BRP`).
-3. **Nome do calendário** (padrão `BRP`) e a **caixa do calendário** (`brp_mailbox`).
-4. **Filtro de remetente** das citações (padrão `@brp.com.br`).
-5. **Credenciais do Azure** (do app "Automacao BRP"): `GRAPH_TENANT_ID`, `GRAPH_CLIENT_ID`,
+2. **Caminho do SQLite local** (padrão `data\ajm-brp.sqlite3`; em produção, uma pasta local do Daniel).
+3. **Pasta de backup** na rede AJM (ex.: `G:\A.Digital\BRP\Backups\sqlite`).
+4. **Base das pastas** dos processos (padrão `G:\A.Digital\BRP`).
+5. **Nome do calendário** (padrão `BRP`) e a **caixa do calendário** (`brp_mailbox`).
+6. **Filtro de remetente** das citações (padrão `@brp.com.br`).
+7. **Credenciais do Azure** (do app "Automacao BRP"): `GRAPH_TENANT_ID`, `GRAPH_CLIENT_ID`,
    `GRAPH_CLIENT_SECRET`. Oriente a colar o **Valor** do segredo (não o ID). Não repita o
    segredo de volta na conversa.
 
@@ -69,10 +73,14 @@ Confirme que tudo conversa, sem efeitos colaterais permanentes:
 
 1. **Leitura**: buscar pelo conector a citação mais recente do BRP e rodar `processar-citacao-brp`
    sobre ela — mostrar os campos extraídos.
-2. **Planilha**: rodar `registrar-planilha-brp` numa **cópia** da planilha (não na original) e
+2. **SQLite**: rodar `database-brp` com `init_db.py`; se houver planilha existente, importar com
+   `importar_planilha.py`; depois inserir um processo de teste e registrar um e-mail de teste;
+   confirmar `integrity_check = ok`.
+3. **Backup**: rodar `backup-brp` uma vez e confirmar arquivo `.sqlite3` + `.sha256` na pasta da rede.
+4. **Planilha**: rodar `registrar-planilha-brp` numa **cópia** da planilha (não na original) e
    conferir que insere/atualiza sem duplicar.
-3. **Pasta**: rodar `criar-pasta-processo` em modo `--simular` e mostrar o caminho.
-4. **Calendário**: criar um **evento de teste** no calendário (via `agenda-brp`) e pedir para a
+5. **Pasta**: rodar `criar-pasta-processo` em modo `--simular` e mostrar o caminho.
+6. **Calendário**: criar um **evento de teste** no calendário (via `agenda-brp`) e pedir para a
    pessoa conferir no Outlook; orientar a apagar depois. Use `--criar-calendario` se for a
    primeira vez.
 
@@ -84,6 +92,14 @@ provável e o que ajustar — não dê a instalação por concluída.
 Pergunte se a pessoa quer ativar a execução automática **de hora em hora** da skill
 `processar-citacao-brp`. Se sim, crie a tarefa agendada e lembre que a **máquina precisa ficar
 ligada** com o Cowork aberto. Se preferir, deixe para ativar depois — a configuração já fica pronta.
+
+Configure também uma tarefa diária para:
+
+```bash
+python skills/backup-brp/scripts/backup_sqlite.py
+```
+
+Use um horário em que a pasta de rede esteja montada.
 
 ## Encerramento
 

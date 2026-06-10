@@ -1,4 +1,7 @@
 {
+  "sqlite_path": "data/ajm-brp.sqlite3",
+  "backup_dir": "G:\\A.Digital\\BRP\\Backups\\sqlite",
+  "backup_retention_days": 90,
   "planilha_path": "G:\\A.Digital\\BRP\\Defesas BRP.xlsx",
   "pastas_base": "G:\\A.Digital\\BRP",
   "brp_calendario": "BRP",

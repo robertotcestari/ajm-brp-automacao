@@ -4,8 +4,9 @@ description: >-
   Lê e interpreta um e-mail de citação do Banco BRP (encaminhado pela equipe da AJM
   Advogados) e extrai os dados estruturados do processo: número CNJ, parte contrária,
   tribunal/UF, comarca, link e chave de acesso aos autos, data de recebimento e
-  audiência quando houver. Em seguida orquestra o registro na planilha de controle, a
-  criação da pasta do processo e o lançamento de audiência/prazo na agenda. Use esta
+  audiência quando houver. Em seguida orquestra o registro no SQLite local, o registro
+  na planilha quando necessário, a criação da pasta do processo e o lançamento de
+  audiência/prazo na agenda. Use esta
   skill SEMPRE que aparecer um e-mail de citação da carteira BRP — assuntos no formato
   "Processo nº ... - NOME DA PARTE", mensagens que dizem "recebemos hoje, via DJE, a
   citação", ou qualquer pedido para "triar", "dar entrada" ou "processar" uma citação
@@ -37,11 +38,15 @@ Em produção esta skill **não recebe um arquivo** — ela é disparada por uma
    padrão "Processo nº ...". Em testes, os e-mails podem chegar reencaminhados (de um Gmail ou
    de outro advogado); nesse caso o remetente do envelope muda, mas o cabeçalho original do BRP
    continua no corpo — use-o para confirmar e para a data de recebimento.
-2. Para cada e-mail, extrair os dados (seção abaixo).
-3. **Não reprocessar**: antes de registrar, conferir se o `numero_processo` já consta na
-   planilha de controle. Se já existe, pular. Esse é o filtro de segurança definitivo,
-   independente de marcação de lido/não-lido.
-4. Marcar o e-mail como tratado (categoria/flag) quando possível, como reforço.
+2. Para cada e-mail, consultar `database-brp`:
+   `python skills/database-brp/scripts/verificar_email.py --message-id "<id do Graph>"`.
+3. Se o e-mail já estiver em `emails_processados`, pular por idempotência.
+4. Se for novo, extrair os dados (seção abaixo).
+5. **Não duplicar processo**: `database-brp` usa `numero_processo` como chave única e
+   preserva dados já preenchidos. A planilha, quando usada, continua com dedup pelo número CNJ.
+6. Ao final, registrar o e-mail em `emails_processados` com status `processado`, `ignorado`,
+   `erro`, `duplicado` ou `sem_numero_processo`.
+7. Marcar o e-mail como tratado (categoria/flag) quando possível, como reforço.
 
 O conector Microsoft 365 disponível é de **leitura/busca**. Escrever no calendário exige um
 componente complementar (MCP próprio sobre a Microsoft Graph) — ver skill `agenda-brp`.
@@ -103,11 +108,13 @@ ficarem como `verificar autos`, para que a triagem humana saiba que precisa abri
 
 Depois de extrair e confirmar, encadeie as skills de ação:
 
-1. `registrar-planilha-brp` — grava a linha na planilha de controle (schema em
+1. `database-brp` — grava/atualiza o processo em `processos` e registra o e-mail em
+   `emails_processados`.
+2. `registrar-planilha-brp` — quando a instalação ainda usar planilha, grava a linha na planilha de controle (schema em
    `assets/schema-planilha.md`), conferindo antes se o número já existe.
-2. `criar-pasta-processo` — cria a pasta no padrão do escritório
+3. `criar-pasta-processo` — cria a pasta no padrão do escritório
    (`assets/nomenclatura-pastas.md`) e devolve o caminho.
-3. `agenda-brp` — lança na agenda BRP **até dois eventos**: a audiência (somente quando há
+4. `agenda-brp` — lança na agenda BRP **até dois eventos**: a audiência (somente quando há
    data/hora confirmada — sem data, nenhum evento) e o **prazo de defesa**, cuja data é
    **calculada** (`data_recebimento + 13 dias úteis`, sáb/dom pulados, feriados ignorados) e
    entra como prazo **provisório** a confirmar nos autos.
@@ -132,7 +139,8 @@ O `<json>` deve juntar **três blocos**, para o log ser autoexplicativo:
 - `extraido` — **todos** os campos extraídos (os da seção "Campos a extrair"), exatamente
   como foram para a planilha.
 - `acoes` — o que cada skill devolveu: `planilha` (inserido/atualizado/pulado),
-  `pasta` (caminho criado/reutilizado) e `agenda` (eventos lançados); e `observacoes` com
+  `database` (processo/e-mail inserido/atualizado/pulado), `pasta` (caminho criado/reutilizado)
+  e `agenda` (eventos lançados); e `observacoes` com
   qualquer pendência (ex.: "sem VPN, pasta não criada").
 
 Onde grava: pasta **`LOGS/` na raiz do projeto** (sobreponível por `--logs-dir` ou pela

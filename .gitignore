@@ -6,3 +6,11 @@ config/graph.env
 # Temporários
 __pycache__/
 *.pyc
+.DS_Store
+
+# Banco local e backups operacionais
+data/
+backups/
+*.sqlite3
+*.sqlite3-shm
+*.sqlite3-wal
