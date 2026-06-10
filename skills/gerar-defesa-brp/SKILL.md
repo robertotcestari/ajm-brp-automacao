@@ -4,8 +4,8 @@ description: >-
   Gera um RASCUNHO de contestação para um processo da carteira BRP da AJM Advogados a partir da
   petição inicial (PDF na pasta do processo) e da base de teses do escritório. Seleciona
   automaticamente as teses aplicáveis, monta a minuta em .docx na estrutura do escritório, com um
-  bloco de "teses aplicadas e justificativa" e um alerta de confiança, e atualiza o status na
-  planilha. Use quando houver uma petição inicial baixada na pasta de um processo BRP e for
+  bloco de "teses aplicadas e justificativa" e um alerta de confiança, e atualiza o status no
+  SQLite. Use quando houver uma petição inicial baixada na pasta de um processo BRP e for
   preciso produzir um rascunho de defesa, ou quando pedirem para "gerar/elaborar a contestação/defesa".
 ---
 
@@ -64,9 +64,10 @@ Pontos de atenção: <lacunas, dúvidas, citações faltando>
 Salve o `.docx` na subpasta de defesa do processo (`03 - Defesa`), com nome claro
 (ex.: `Contestação (rascunho) - <Parte> - <Número>.docx`).
 
-### 5. Atualizar a planilha
-Via `registrar-planilha-brp`: `Status da minuta` = `Rascunho gerado` e `Teses aplicáveis` com a
-lista das teses usadas.
+### 5. Atualizar o SQLite
+Via `database-brp`: `status_minuta = Rascunho gerado` e `teses_aplicaveis` com a lista das teses
+usadas. Não escreva automaticamente na planilha; se a equipe pedir atualização do `.xlsx`, rode
+`registrar-planilha-brp` manualmente depois, lendo do SQLite.
 
 ### 6. Entregar para revisão
 Avise que o rascunho está pronto, destacando o **Nível** e os **pontos de atenção**. Em casos

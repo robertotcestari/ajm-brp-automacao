@@ -4,7 +4,7 @@ description: >-
   Cria a pasta de um processo da carteira BRP no servidor/VPN do escritório AJM Advogados,
   seguindo a nomenclatura padrão definida em assets/nomenclatura-pastas.md, com as subpastas
   de citação, petição e defesa. Reutiliza a pasta se já existir e devolve o caminho para
-  registrar na planilha. Use depois de processar-citacao-brp, ou sempre que precisar abrir a
+  registrar no SQLite. Use depois de processar-citacao-brp, ou sempre que precisar abrir a
   pasta de um processo novo da BRP.
 ---
 
@@ -34,8 +34,9 @@ python scripts/criar_pasta.py --base "<BASE>" --numero "<numero>" --parte "<part
 python scripts/criar_pasta.py --base "<BASE>" --numero "<numero>" --parte "<parte>" --simular
 ```
 
-4. Devolva o caminho criado para alimentar a planilha (`caminho_pasta` e
-   `status_pasta = Criada`) via `registrar-planilha-brp`.
+4. Devolva o caminho criado para alimentar o SQLite (`caminho_pasta` e
+   `status_pasta = Criada`) via `database-brp`. Não escreva automaticamente na planilha; se a
+   equipe pedir atualização do `.xlsx`, rode `registrar-planilha-brp` manualmente depois.
 
 Se o caminho-base não estiver acessível (sem VPN, permissão negada), **não falhe em
 silêncio**: relate o caminho pretendido e o erro, para a triagem humana criar manualmente.

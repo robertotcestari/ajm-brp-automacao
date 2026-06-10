@@ -96,8 +96,9 @@ Confirme que tudo conversa, sem efeitos colaterais permanentes:
    `importar_planilha.py`; depois inserir um processo de teste e registrar um e-mail de teste;
    confirmar `integrity_check = ok`.
 3. **Backup**: rodar `backup-brp` uma vez e confirmar arquivo `.sqlite3` + `.sha256` na pasta da rede.
-4. **Planilha**: rodar `registrar-planilha-brp` numa **cópia** da planilha (não na original) e
-   conferir que insere/atualiza sem duplicar.
+4. **Planilha manual**: rodar `registrar-planilha-brp` lendo o processo de teste do SQLite e
+   escrevendo numa **cópia** da planilha (não na original); conferir que insere/atualiza sem
+   duplicar.
 5. **Pasta**: rodar `criar-pasta-processo` em modo `--simular` e mostrar o caminho.
 6. **Calendário**: criar um **evento de teste** no calendário (via `agenda-brp`) e pedir para a
    pessoa conferir no Outlook; orientar a apagar depois. Use `--criar-calendario` se for a

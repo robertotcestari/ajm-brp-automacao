@@ -41,7 +41,7 @@ A partir do registro da citação, **até dois eventos por processo**:
   Essa data é **calculada automaticamente**: `data_recebimento + 13 dias úteis`, pulando apenas
   sábados e domingos (feriados ignorados de propósito — um prazo mais cedo é mais conservador,
   menos risco de perder a defesa). É um prazo **PROVISÓRIO**: o corpo do evento avisa para
-  confirmar nos autos. Passe `--recebimento` e o script faz a conta (mesma regra da planilha,
+  confirmar nos autos. Passe `--recebimento` e o script faz a conta (mesma regra do SQLite/planilha,
   em `lib/datas.py`). Só caia para a tarefa `verificar` ("Verificar prazo nos autos") se **nem
   a data de recebimento** for conhecida.
 
@@ -70,9 +70,9 @@ python scripts/criar_evento_graph.py --tipo verificar \
   --numero "..." --parte "..." --inicio "2026-06-02"
 ```
 
-Depois de lançar, não há campo dedicado de "evento criado" na planilha; registre o sucesso/
-falha no retorno para a orquestração. Se a Graph recusar (token, permissão, calendário não
-encontrado), **relate** — não siga como se tivesse lançado.
+Depois de lançar, registre o sucesso/falha no retorno para a orquestração e no log/SQLite quando
+aplicável. Não escreva automaticamente na planilha. Se a Graph recusar (token, permissão,
+calendário não encontrado), **relate** — não siga como se tivesse lançado.
 
 ## Idempotência (não duplicar eventos)
 

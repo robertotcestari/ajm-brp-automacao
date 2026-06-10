@@ -4,9 +4,10 @@ description: >-
   Lê e interpreta um e-mail de citação do Banco BRP (encaminhado pela equipe da AJM
   Advogados) e extrai os dados estruturados do processo: número CNJ, parte contrária,
   tribunal/UF, comarca, link e chave de acesso aos autos, data de recebimento e
-  audiência quando houver. Em seguida orquestra o registro no SQLite local, o registro
-  na planilha quando necessário, a criação da pasta do processo e o lançamento de
-  audiência/prazo na agenda. Use esta
+  audiência quando houver. Em seguida orquestra o registro no SQLite local, a criação
+  da pasta do processo e o lançamento de audiência/prazo na agenda. Não escreve na
+  planilha automaticamente; a planilha é atualizada manualmente por registrar-planilha-brp,
+  lendo os dados do SQLite. Use esta
   skill SEMPRE que aparecer um e-mail de citação da carteira BRP — assuntos no formato
   "Processo nº ... - NOME DA PARTE", mensagens que dizem "recebemos hoje, via DJE, a
   citação", ou qualquer pedido para "triar", "dar entrada" ou "processar" uma citação
@@ -36,10 +37,9 @@ claro qual é o próximo passo. Para uma rodada normal, use esta sequência:
 2. Verificar idempotência no SQLite.
 3. Extrair dados do e-mail novo.
 4. Registrar processo e e-mail no SQLite.
-5. Atualizar planilha quando aplicável.
-6. Criar ou reutilizar pasta do processo.
-7. Lançar audiência/prazo na agenda.
-8. Gravar log de auditoria e resumir pendências.
+5. Criar ou reutilizar pasta do processo.
+6. Lançar audiência/prazo na agenda.
+7. Gravar log de auditoria e resumir pendências.
 
 Se alguma etapa for pulada por configuração da instalação, marque como concluída com a razão
 no resumo, não deixe o TODO ambíguo.
@@ -61,10 +61,12 @@ Em produção esta skill **não recebe um arquivo** — ela é disparada por uma
 3. Se o e-mail já estiver em `emails_processados`, pular por idempotência.
 4. Se for novo, extrair os dados (seção abaixo).
 5. **Não duplicar processo**: `database-brp` usa `numero_processo` como chave única e
-   preserva dados já preenchidos. A planilha, quando usada, continua com dedup pelo número CNJ.
+   preserva dados já preenchidos.
 6. Ao final, registrar o e-mail em `emails_processados` com status `processado`, `ignorado`,
    `erro`, `duplicado` ou `sem_numero_processo`.
 7. Marcar o e-mail como tratado (categoria/flag) quando possível, como reforço.
+8. **Não escrever na planilha nesta rodada.** A planilha só é atualizada quando alguém invocar
+   manualmente `registrar-planilha-brp`, que lê do SQLite e grava no `.xlsx`.
 
 O conector Microsoft 365 disponível é de **leitura/busca**. Escrever no calendário exige um
 componente complementar (MCP próprio sobre a Microsoft Graph) — ver skill `agenda-brp`.
@@ -97,7 +99,7 @@ Produza um registro com estes campos (use exatamente estes nomes):
   se o e-mail afirmar que não há audiência.
 - `audiencia_obs` — detalhes úteis (ex.: "telepresencial via Microsoft Teams").
 - `prazo_defesa` — quase nunca vem no e-mail → deixe `verificar autos`. **Não calcule à mão
-  aqui**: o `registrar-planilha-brp` e o `agenda-brp` calculam sozinhos um prazo *provisório*
+  aqui**: o `agenda-brp` calcula sozinho um prazo *provisório*
   (`data_recebimento + 13 dias úteis`) — por isso a `data_recebimento` correta é tão crítica.
 - `fonte_prazo` — `E-mail`, `Autos` ou `Provisório` (ver `assets/schema-planilha.md`).
 
@@ -128,14 +130,16 @@ Depois de extrair e confirmar, encadeie as skills de ação:
 
 1. `database-brp` — grava/atualiza o processo em `processos` e registra o e-mail em
    `emails_processados`.
-2. `registrar-planilha-brp` — quando a instalação ainda usar planilha, grava a linha na planilha de controle (schema em
-   `assets/schema-planilha.md`), conferindo antes se o número já existe.
-3. `criar-pasta-processo` — cria a pasta no padrão do escritório
+2. `criar-pasta-processo` — cria a pasta no padrão do escritório
    (`assets/nomenclatura-pastas.md`) e devolve o caminho.
-4. `agenda-brp` — lança na agenda BRP **até dois eventos**: a audiência (somente quando há
+3. `agenda-brp` — lança na agenda BRP **até dois eventos**: a audiência (somente quando há
    data/hora confirmada — sem data, nenhum evento) e o **prazo de defesa**, cuja data é
    **calculada** (`data_recebimento + 13 dias úteis`, sáb/dom pulados, feriados ignorados) e
    entra como prazo **provisório** a confirmar nos autos.
+
+Não chame `registrar-planilha-brp` durante o intake. Quando a equipe pedir para atualizar a
+planilha, chame `registrar-planilha-brp`; ela deve ler o SQLite e escrever no `.xlsx` de forma
+manual e controlada.
 
 Se alguma ação não puder rodar (sem acesso ao servidor, à agenda etc.), registre o que
 conseguiu e sinalize claramente o que ficou pendente, em vez de falhar em silêncio.
@@ -155,9 +159,9 @@ O `<json>` deve juntar **três blocos**, para o log ser autoexplicativo:
 - `email` — o e-mail **bruto**: `assunto`, `remetente`, `recebido_em`, `message_id` e um
   trecho (ou a íntegra) do `corpo`. É o que permite reconferir a extração depois.
 - `extraido` — **todos** os campos extraídos (os da seção "Campos a extrair"), exatamente
-  como foram para a planilha.
-- `acoes` — o que cada skill devolveu: `planilha` (inserido/atualizado/pulado),
-  `database` (processo/e-mail inserido/atualizado/pulado), `pasta` (caminho criado/reutilizado)
+  como foram para o SQLite.
+- `acoes` — o que cada skill devolveu: `database` (processo/e-mail inserido/atualizado/pulado),
+  `pasta` (caminho criado/reutilizado)
   e `agenda` (eventos lançados); e `observacoes` com
   qualquer pendência (ex.: "sem VPN, pasta não criada").
 

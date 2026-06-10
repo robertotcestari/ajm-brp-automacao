@@ -10,7 +10,7 @@ description: >-
 
 Esta skill mantém a memória local da automação BRP em SQLite. A partir da v0.3, o banco
 local passa a ser o registro operacional principal; a planilha pode continuar existindo
-como exportação/compatibilidade, mas o intake deve consultar o SQLite antes de agir.
+como visão operacional manual, mas o intake deve consultar o SQLite antes de agir.
 
 ## Acompanhamento por TODO
 

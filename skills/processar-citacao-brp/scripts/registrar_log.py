@@ -3,7 +3,7 @@
 Grava um log de auditoria de cada e-mail de citação BRP processado pela automação.
 
 Objetivo: deixar rastro completo para depurar no futuro — o que foi lido do e-mail,
-o que a automação extraiu e o que cada ação (planilha/pasta/agenda) devolveu.
+o que a automação extraiu e o que cada ação (SQLite/pasta/agenda) devolveu.
 
 - Cria a pasta de logs se não existir (padrão: LOGS/ na raiz do projeto/plugin).
 - Agrupa por EXECUÇÃO: um arquivo por rodada (padrão = a hora corrente, casando com a
@@ -26,7 +26,7 @@ Formato sugerido do registro (todos os campos são livres/opcionais — grave o 
     },
     "extraido": { ...campos de processar-citacao-brp (numero_processo, etc.)... },
     "acoes": {                      # o que cada skill devolveu
-      "planilha": "inserido/atualizado/pulado (duplicado)",
+      "database": "processo/e-mail inserido/atualizado/pulado",
       "pasta": "G:\\...\\<Parte> - <numero>",
       "agenda": ["audiencia ...", "prazo ..."]
     },
