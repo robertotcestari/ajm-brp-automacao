@@ -12,6 +12,23 @@ Esta skill mantém a memória local da automação BRP em SQLite. A partir da v0
 local passa a ser o registro operacional principal; a planilha pode continuar existindo
 como exportação/compatibilidade, mas o intake deve consultar o SQLite antes de agir.
 
+## Acompanhamento por TODO
+
+Quando a operação envolver mais de uma ação (instalar, migrar planilha, registrar processo e
+e-mail, ou auditar duplicidade), chame a ferramenta de TODO do Claude antes de rodar os scripts.
+Mantenha exatamente um item como `in_progress` e atualize a lista a cada script concluído.
+
+Para instalação/migração, use:
+
+1. Confirmar caminho do SQLite.
+2. Inicializar ou migrar schema.
+3. Importar planilha existente, se houver.
+4. Registrar processo de teste.
+5. Registrar e verificar e-mail de teste.
+6. Confirmar `PRAGMA integrity_check`.
+
+Para uma consulta rápida de idempotência, não precisa abrir TODO se houver apenas um comando.
+
 ## Arquivo do banco
 
 O caminho padrão é `data/ajm-brp.sqlite3` dentro do plugin. Em produção, no computador do

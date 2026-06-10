@@ -26,6 +26,24 @@ diferentes (o "ENC:" do Outlook, o "Fwd: ... Enviado do meu iPhone"), com pontua
 quebras variando, e a audiência às vezes aparece numa frase solta no meio do texto. Um
 padrão fixo quebra nessas variações; a leitura compreensiva, não.
 
+## Acompanhamento por TODO
+
+Antes de iniciar uma rodada, chame a ferramenta de TODO do Claude para criar uma lista visível
+dos passos. Mantenha exatamente um item como `in_progress`, marque cada etapa concluída e deixe
+claro qual é o próximo passo. Para uma rodada normal, use esta sequência:
+
+1. Buscar e-mails candidatos.
+2. Verificar idempotência no SQLite.
+3. Extrair dados do e-mail novo.
+4. Registrar processo e e-mail no SQLite.
+5. Atualizar planilha quando aplicável.
+6. Criar ou reutilizar pasta do processo.
+7. Lançar audiência/prazo na agenda.
+8. Gravar log de auditoria e resumir pendências.
+
+Se alguma etapa for pulada por configuração da instalação, marque como concluída com a razão
+no resumo, não deixe o TODO ambíguo.
+
 ## Origem dos e-mails (execução agendada)
 
 Em produção esta skill **não recebe um arquivo** — ela é disparada por uma **tarefa agendada**

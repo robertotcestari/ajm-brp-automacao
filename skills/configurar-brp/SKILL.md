@@ -20,6 +20,25 @@ por isso, explique cada passo em linguagem simples e nunca siga adiante com um d
 É **re-executável**: rodar de novo serve para reconfigurar (trocar a caixa, o caminho da
 planilha, renovar o segredo etc.). Sempre leia a config atual antes e mostre o que vai mudar.
 
+## Acompanhamento por TODO
+
+Antes de começar, chame a ferramenta de TODO do Claude para criar uma lista visível da
+instalação. Mantenha exatamente um item como `in_progress`, atualize a lista a cada avanço e
+use os nomes dos passos abaixo para a pessoa saber onde está e aonde vai chegar:
+
+1. Checar pré-requisitos.
+2. Validar conector Microsoft 365.
+3. Coletar caminhos e credenciais.
+4. Gravar configuração local.
+5. Inicializar e validar SQLite.
+6. Testar backup.
+7. Testar planilha, pasta e calendário.
+8. Configurar tarefas agendadas.
+9. Resumir instalação e pendências.
+
+Se uma etapa depender de ação humana ou permissão externa, deixe o TODO nessa etapa até a
+decisão ficar clara; não avance fingindo que a configuração foi validada.
+
 ## O que esta skill grava
 
 - `config/brp.config.json` — dados da máquina (caminho da planilha, base das pastas, nome do

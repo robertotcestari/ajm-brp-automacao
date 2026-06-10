@@ -11,6 +11,21 @@ description: >-
 Esta skill protege o SQLite local da automação BRP. O banco fica no computador do Daniel;
 a pasta da rede da AJM recebe uma cópia diária validada.
 
+## Acompanhamento por TODO
+
+Para backup manual, configuração do backup diário ou investigação de falha, chame a ferramenta
+de TODO do Claude antes de executar. Mantenha exatamente um item como `in_progress`:
+
+1. Confirmar caminho do banco origem.
+2. Confirmar pasta de rede de destino.
+3. Rodar backup SQLite validado.
+4. Conferir arquivo `.sqlite3` e `.sha256`.
+5. Confirmar `integrity_check = ok`.
+6. Registrar resultado e pendências.
+
+Se a pasta de rede não estiver montada, pare no passo 2 e relate a ação necessária; não trate
+backup local temporário como backup concluído na rede.
+
 ## Configuração
 
 Defina em `config/brp.config.json`:
