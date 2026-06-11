@@ -44,7 +44,8 @@ ajm-brp-automacao/
 
 - **E-mail e agenda:** caixa Exchange Online (Microsoft 365) da AJM via Microsoft Graph.
 - **Pasta dos processos:** acesso ao servidor/VPN onde ficam as pastas.
-- **Banco local:** SQLite em `data/ajm-brp.sqlite3` ou no caminho definido em `config/brp.config.json`.
+- **Banco local:** SQLite em `C:\Users\daniel.brillinger\AppData\Local\AJM-BRP\ajm-brp.sqlite3`
+  ou no caminho definido em `config/brp.config.json`.
 - **Backup:** pasta de rede da AJM acessível pela máquina do Daniel.
 - **Planilha de controle Claude:** arquivo separado, por padrão `Defesas BRP - Claude.xlsx`,
   atualizado a partir do SQLite durante o intake. A planilha original da AJM é somente referência/importação.

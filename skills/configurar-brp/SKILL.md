@@ -78,7 +78,8 @@ Pergunte (uma coisa de cada vez, com o padrão atual como sugestão):
    `G:\A.Digital\BRP\Defesas BRP.xlsx`).
 2. **Caminho da planilha exclusiva do Claude** (padrão
    `G:\A.Digital\BRP\Defesas BRP - Claude.xlsx`).
-3. **Caminho do SQLite local** (padrão `data\ajm-brp.sqlite3`; em produção, uma pasta local do Daniel).
+3. **Caminho do SQLite local** (padrão
+   `C:\Users\daniel.brillinger\AppData\Local\AJM-BRP\ajm-brp.sqlite3`; não usar pasta de rede).
 4. **Pasta de backup** na rede AJM (ex.: `G:\A.Digital\BRP\Backups\sqlite`).
 5. **Base das pastas** dos processos (padrão `G:\A.Digital\BRP`).
 6. **Nome do calendário** (padrão `BRP`) e a **caixa do calendário** (`brp_mailbox`).

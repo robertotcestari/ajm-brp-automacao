@@ -32,7 +32,7 @@ Defina em `config/brp.config.json`:
 
 ```json
 {
-  "sqlite_path": "C:\\AJM\\BRP\\data\\ajm-brp.sqlite3",
+  "sqlite_path": "C:\\Users\\daniel.brillinger\\AppData\\Local\\AJM-BRP\\ajm-brp.sqlite3",
   "backup_dir": "G:\\A.Digital\\BRP\\Backups\\sqlite",
   "backup_retention_days": 90
 }

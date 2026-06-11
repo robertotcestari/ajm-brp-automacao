@@ -31,14 +31,15 @@ Para uma consulta rápida de idempotência, não precisa abrir TODO se houver ap
 
 ## Arquivo do banco
 
-O caminho padrão é `data/ajm-brp.sqlite3` dentro do plugin. Em produção, no computador do
-Daniel, prefira configurar `sqlite_path` em `config/brp.config.json`.
+O caminho padrão de produção no computador do Daniel é
+`C:\Users\daniel.brillinger\AppData\Local\AJM-BRP\ajm-brp.sqlite3`, configurado em
+`config/brp.config.json`. Evite colocar o SQLite na pasta de rede; a rede recebe apenas backups.
 
 Exemplo:
 
 ```json
 {
-  "sqlite_path": "C:\\AJM\\BRP\\data\\ajm-brp.sqlite3"
+  "sqlite_path": "C:\\Users\\daniel.brillinger\\AppData\\Local\\AJM-BRP\\ajm-brp.sqlite3"
 }
 ```
 
